@@ -70,3 +70,5 @@ Johannes Haddad
 =======
 Pamela Castillo- pamela.abigail.castillo.gonzalez@ki.stud.se
 >>>>>>> ead9f20036aaa9d51eed3a8c35a0bab5831e2f25
+
+pardon runesu (pardonm6@gmail.com)
