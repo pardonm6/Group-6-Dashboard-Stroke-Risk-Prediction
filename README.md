@@ -70,4 +70,3 @@ Johannes Haddad
 =======
 Pamela Castillo- pamela.abigail.castillo.gonzalez@ki.stud.se
 >>>>>>> ead9f20036aaa9d51eed3a8c35a0bab5831e2f25
-Htet Wai Aung - 1st test commit
