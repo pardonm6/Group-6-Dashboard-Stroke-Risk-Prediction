@@ -64,4 +64,4 @@ This logic resembles the expected pipeline, where the jupyter notebooks are used
 
 ## Contributors
 
-_Add the project's authors, contact information, and links to their websites or portfolios._
+Pamela Castillo- pamela.abigail.castillo.gonzalez@ki.stud.se
