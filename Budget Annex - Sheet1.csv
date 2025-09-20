@@ -1,0 +1,38 @@
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+,Detailed Budget Breakdown,,,,,,,,,,,,
+,Budget Category,Units,Rate (SEK),Amount (SEK),,Funding Sources & Allocation,,,,,Budget Distribution Summary,,
+,1. OPERATIONAL EXPENSES,,,,,Funding Source,Percentage,Amount (SEK),Purpose,,Category,Amount (SEK),Percentage of Total
+,Electricity Costs,480 kWh,3,"1,200",,National Health Budget Allocation,65%,"141,261","Human Resources, Technology",,Human Resources,"196,000",90.19%
+,Computer power consumption (5 computers × 320 hours),"1,600 hours",1,"1,200",,Karolinska Institutet Research Fund,25%,"54,331","Operational Expenses, Materials",,Software & Technology,"4,300",1.98%
+,OPERATIONAL EXPENSES Subtotal,,,"2,400",,PROHI Course Budget,10%,"21,733","Miscellaneous, Contingency",,Materials & Stationery,"1,500",0.69%
+,2. TELECOMMUNICATIONS,,,,,TOTAL FUNDING,100%,"217,325",Complete Project Coverage,,Telecommunications,"1,400",0.64%
+,Internet Connectivity,2 months,500,"1,000",,,,,,,Electricity,"2,400",1.10%
+,Mobile Communication,2 months,200,400,,,,,,,Miscellaneous,"1,700",0.78%
+,Telecommunications Subtotal,,,"1,400",,,,,,,Contingency,"10,025",4.61%
+,3. STATIONERY & MATERIALS,,,,,,,,,,Total Project Budget,"217,325",
+,A4 Paper & Printing,"2,000 sheets",0,200,,,,,,,,,
+,"Pens, Markers, Notebooks",Various,-,300,,,,,,,,,
+,Poster Printing (A0 size),2 posters,400,800,,,,,,,,,
+,Documentation Binding,10 copies,20,200,,,,,,,,,
+,Materials Subtotal,,,"1,500",,,,,,,,,
+,4. HUMAN RESOURCES,,,,,,,,,,,,
+,Project Manager,70 hours,600,"42,000",,,,,,,,,
+,Project Officer/Srum Manager,70 hours,550,"38,500",,,,,,,,,
+,Project Officer/ QA Officer,70 hours,550,"38,500",,,,,,,,,
+,Project Officer/ Communication Officer,70 hours,550,"38,500",,,,,,,,,
+,Project Officer/ Project Monitor,70 hours,550,"38,500",,,,,,,,,
+,Human Resources Subtotal,340 hours,,"196,000",,,,,,,,,
+,5. SOFTWARE & TECHNOLOGY,,,,,,,,,,,,
+,Development Environment Licenses,5 licenses,400,"2,000",,,,,,,,,
+,Cloud Computing Resources,2 months,750,"1,500",,,,,,,,,
+,Collaboration Tools (Premium),2 months,400,800,,,,,,,,,
+,Software Subtotal,,,"4,300",,,,,,,,,
+,6. MISCELLANEOUS EXPENSES,,,,,,,,,,,,
+,Meeting Room Bookings,10 sessions,50,500,,,,,,,,,
+,Team Refreshments,8 weeks,100,800,,,,,,,,,
+,Transportation,Various,-,400,,,,,,,,,
+,Miscellaneous Subtotal,,,"1,700",,,,,,,,,
+,PROJECT SUBTOTAL,,,"207,300",,,,,,,,,
+,Contingency Fund (5%),,,"10,025",,,,,,,,,
+,TOTAL PROJECT BUDGET,,,"217,325",,,,,,,,,
