@@ -1,7 +1,7 @@
 import streamlit as st
 
 def contact_form():
-with st.form("contact_form"):
+    with st.form("contact_form"):
     st.text_input("First Name")
     st.text_input("Last Name")
     st.text_input("Email")
