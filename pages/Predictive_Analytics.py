@@ -1,10 +1,6 @@
 import streamlit as st
 import pickle
 
-st.markdown("# Predictive Analytics 🎯")
-
-st.sidebar.markdown("# Predictive Analytics 🎯")
-
 """
 ⚠️ Add here some predictive analytics with Widgets and Plots
 """
