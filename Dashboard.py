@@ -6,7 +6,7 @@ st.set_page_config(
 )
 
 # Sidebar configuration
-st.sidebar.image("./assets/Logo.png",)
+st.sidebar.image("./assets/NeuroPredict.png",)
 st.sidebar.success("Select a tab above.")
 
 # # Page information
