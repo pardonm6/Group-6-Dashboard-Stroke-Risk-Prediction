@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore')
 
 # Page configuration
 st.set_page_config(
-    page_title="NeuroPredict - Stroke Risk Dashboard",
+    page_title="NeuroPredict Dashboard",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -25,12 +25,14 @@ st.markdown("""
     <style>
     .main-header {
         font-size: 2.5rem;
-        color: #1f77b4;
+        color: #ffffff;
         text-align: center;
         padding: 1rem;
-        background-color: #f0f2f6;
-        border-radius: 10px;
+        background-color: #0e2a47;
+        border: 1px solid #cccccc;
+        border-radius: 8px;
         margin-bottom: 2rem;
+        width : 100%;
     }
     .risk-box {
         padding: 2rem;
@@ -65,6 +67,7 @@ st.markdown("""
         background-color: #ffffff;
         padding: 1rem;
         border-radius: 10px;
+        border: 1px solid #dddddd;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         margin-bottom: 1rem;
     }
@@ -154,21 +157,21 @@ data = load_sample_data()
 model, le_gender, le_married, le_work, le_residence, le_smoking = train_model(data)
 
 # Sidebar navigation
-st.sidebar.markdown('<div class="sidebar-header">🧠 NeuroPredict</div>', unsafe_allow_html=True)
-st.sidebar.markdown("### Navigation")
+st.sidebar.markdown('<div class="sidebar-header"> Pages:</div>', unsafe_allow_html=True)
+
 
 page = st.sidebar.radio(
     "Select Page:",
-    ["🏠 Home", "📊 Descriptive", "🔍 Diagnostic", "⚠️ Risk Prediction", 
-     "💡 What-If/Preventive", "ℹ️ About"],
+    ["Home", "Descriptive Analytics", "Diagnostic Analytics", "Risk Prediction", 
+     "What-If/Preventive"],
     label_visibility="collapsed"
 )
 
 # Header
-st.markdown('<h1 class="main-header">🧠 Stroke Risk Prediction Dashboard</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header"> Stroke Risk Prediction Dashboard 🧠 </h1>', unsafe_allow_html=True)
 
 # Home Page
-if page == "🏠 Home":
+if page == "Home":
     st.markdown("## Guide to the Dashboard")
     
     col1, col2 = st.columns([2, 1])
@@ -182,49 +185,46 @@ if page == "🏠 Home":
         
         #### Available Features:
         
-        **📊 Descriptive**
+        1. Descriptive Analytics :
         - View key statistics and analysis about the stroke dataset
         - Understand demographic distributions and risk factor prevalence
         
-        **🔍 Diagnostic**
+        2. Diagnostic Analytics:
         - Explore statistical relationships between variables
         - Identify important risk factors through correlation analysis
         
-        **⚠️ Risk Prediction**
+        3. Risk Prediction :
         - Input patient data to generate personalized stroke risk assessments
         - Get immediate risk classification (Low/Medium/High)
         
-        **💡 What-If/Preventive**
+        4. What-If/Preventive :
         - Explore prevention strategies and lifestyle modifications
         - Understand how changing risk factors affects stroke probability
         
-        **ℹ️ About**
+        5. About :
         - Learn more about the project and methodology
         - View model performance metrics and limitations
         """)
     
     with col2:
-        st.info("""
-        ### Quick Stats
-        - **Total Patients Analyzed:** 5,000
-        - **Model Accuracy:** ~92%
-        - **Risk Factors Tracked:** 10
-        - **Last Updated:** 2024
-        """)
         
         st.success("""
-        ### Key Risk Factors
+        ### Risk Factors Considered: 
         - Age
+        - Gender
         - Hypertension
         - Heart Disease
         - Glucose Level
         - BMI
         - Smoking Status
+        - Marital Status
+        - Work Type
+        - Residence Type
         """)
 
 # Descriptive Analysis Page
-elif page == "📊 Descriptive":
-    st.markdown("## Descriptive Analysis")
+elif page == "Descriptive Analytics":
+    st.markdown("## Descriptive Analytics")
     st.markdown("This page shows key analysis about the dataset we trained")
     
     # Create tabs for different visualizations
@@ -282,8 +282,8 @@ elif page == "📊 Descriptive":
         st.plotly_chart(fig_corr, use_container_width=True)
 
 # Diagnostic Page
-elif page == "🔍 Diagnostic":
-    st.markdown("## Diagnostic Analysis")
+elif page == "Diagnostic Analytics":
+    st.markdown("## Diagnostic Analytics")
     st.markdown("This page includes statistical analysis about the stroke data")
     
     col1, col2, col3 = st.columns(3)
@@ -337,7 +337,7 @@ elif page == "🔍 Diagnostic":
     st.plotly_chart(fig, use_container_width=True)
 
 # Risk Prediction Page
-elif page == "⚠️ Risk Prediction":
+elif page == "Risk Prediction":
     st.markdown("## Risk Prediction")
     st.markdown("Generate stroke risk prediction based on patient data entered")
     
@@ -435,7 +435,7 @@ elif page == "⚠️ Risk Prediction":
             st.info("Enter patient data and click 'Predict Risk' to see results")
 
 # What-If/Preventive Page
-elif page == "💡 What-If/Preventive":
+elif page == "What-If/Preventive":
     st.markdown("## What-If Analysis & Prevention Measures")
     st.markdown("Explore how lifestyle changes can reduce stroke risk")
     
@@ -557,75 +557,6 @@ elif page == "💡 What-If/Preventive":
         professionals for personalized medical advice and treatment plans.
         """)
 
-# About Page
-elif page == "ℹ️ About":
-    st.markdown("## About NeuroPredict")
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.markdown("""
-        ### Project Overview
-        
-        NeuroPredict is an advanced stroke risk prediction dashboard developed to assist 
-        healthcare professionals and individuals in assessing and understanding stroke risk factors.
-        
-        ### Technology Stack
-        - **Frontend:** Streamlit
-        - **Backend:** Python
-        - **ML Framework:** Scikit-learn
-        - **Visualization:** Plotly
-        - **Deployment:** Streamlit Cloud
-        
-        ### Model Information
-        - **Algorithm:** Random Forest Classifier
-        - **Features:** 10 risk factors
-        - **Training Data:** 5,000 patient records
-        - **Validation Accuracy:** ~92%
-        - **Cross-validation:** 5-fold
-        
-        ### Key Features
-        - Real-time risk prediction
-        - Interactive data visualization
-        - What-if scenario analysis
-        - Prevention recommendations
-        - Comprehensive risk factor analysis
-        
-        ### Data Privacy
-        All patient data entered into this dashboard is processed locally and is not stored 
-        or transmitted to any external servers. We prioritize patient privacy and data security.
-        """)
-    
-    with col2:
-        st.markdown("""
-        ### Team Members
-        - Data Scientists
-        - Healthcare Professionals
-        - Software Engineers
-        - UX/UI Designers
-        
-        ### Contact
-        📧 Email: info@neuropredict.com
-        🌐 Website: www.neuropredict.com
-        📱 Support: +1-XXX-XXX-XXXX
-        
-        ### Version
-        **Current Version:** 1.0.0
-        **Last Updated:** 2024
-        
-        ### Disclaimer
-        This tool is for educational and screening purposes only. It should not replace 
-        professional medical advice, diagnosis, or treatment.
-        """)
-    
-    st.info("""
-    ### Future Enhancements
-    - Integration with Electronic Health Records (EHR)
-    - Mobile application development
-    - Multi-language support
-    - Advanced deep learning models
-    - Real-time monitoring capabilities
-    """)
 
 # Footer
 st.markdown("---")
