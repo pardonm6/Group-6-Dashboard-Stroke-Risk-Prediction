@@ -11,6 +11,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 import warnings
 warnings.filterwarnings('ignore')
+import pandas as pd
+
+# Loading dataset (making sure the CSV is in the same folder as Dashboard.py)
+df = pd.read_csv("jupyter-notebooks/cleaned_stroke_data.csv")
+
 
 # Page configuration
 st.set_page_config(
@@ -79,81 +84,97 @@ if 'model' not in st.session_state:
     st.session_state.model = None
     st.session_state.data_loaded = False
 
-# Generate sample data for demonstration
+# Use the cleaned CSV (uploaded) instead of synthetic data
 @st.cache_data
-def load_sample_data():
-    np.random.seed(42)
-    n_samples = 5000
-    
-    data = pd.DataFrame({
-        'age': np.random.normal(55, 15, n_samples).clip(18, 90).astype(int),
-        'gender': np.random.choice(['Male', 'Female'], n_samples, p=[0.45, 0.55]),
-        'hypertension': np.random.choice([0, 1], n_samples, p=[0.75, 0.25]),
-        'heart_disease': np.random.choice([0, 1], n_samples, p=[0.85, 0.15]),
-        'ever_married': np.random.choice(['Yes', 'No'], n_samples, p=[0.65, 0.35]),
-        'work_type': np.random.choice(['Private', 'Self-employed', 'Govt_job', 'children', 'Never_worked'], 
-                                     n_samples, p=[0.4, 0.25, 0.2, 0.1, 0.05]),
-        'Residence_type': np.random.choice(['Urban', 'Rural'], n_samples, p=[0.55, 0.45]),
-        'avg_glucose_level': np.random.normal(110, 40, n_samples).clip(50, 300),
-        'bmi': np.random.normal(28, 5, n_samples).clip(15, 50),
-        'smoking_status': np.random.choice(['formerly smoked', 'never smoked', 'smokes', 'Unknown'], 
-                                          n_samples, p=[0.2, 0.4, 0.25, 0.15])
-    })
-    
-    # Create stroke outcome with some correlation to risk factors
-    stroke_prob = 0.05  # Base probability
-    stroke = []
-    for idx, row in data.iterrows():
-        prob = stroke_prob
-        if row['age'] > 65: prob += 0.1
-        if row['hypertension'] == 1: prob += 0.15
-        if row['heart_disease'] == 1: prob += 0.15
-        if row['avg_glucose_level'] > 140: prob += 0.1
-        if row['bmi'] > 30: prob += 0.05
-        if row['smoking_status'] == 'smokes': prob += 0.1
-        
-        stroke.append(1 if np.random.random() < prob else 0)
-    
-    data['stroke'] = stroke
-    return data
+def load_real_data():
+    df = pd.read_csv("jupyter-notebooks/cleaned_stroke_data.csv")
 
-# Train a simple model
+    # Rename to match the rest of the app
+    df = df.rename(columns={
+        "ID": "id",
+        "Sex": "gender",
+        "Age": "age",
+        "Hypertension": "hypertension",
+        "Heart Disease": "heart_disease",
+        "Ever Married?": "ever_married",
+        "Work Type": "work_type",
+        "Residence Type": "Residence_type",
+        "Avg Glucose Level": "avg_glucose_level",
+        "BMI": "bmi",
+        "Smoking?": "smoking_status",
+        "Ever had a Stroke?": "stroke",
+    })
+
+    # Normalize types
+    # Booleans or yes/no → 0/1 for model compatibility
+    for col in ["hypertension", "heart_disease", "ever_married", "stroke"]:
+        if col in df.columns:
+            if df[col].dtype == bool:
+                df[col] = df[col].astype(int)
+            else:
+                df[col] = (
+                    df[col]
+                    .replace({True: 1, False: 0, "Yes": 1, "No": 0, "YES": 1, "NO": 0, "TRUE": 1, "FALSE": 0})
+                    .astype(int)
+                )
+
+    # Numeric coercion + simple impute for BMI (if any zeros/NaN)
+    df["bmi"] = pd.to_numeric(df["bmi"], errors="coerce")
+    df["avg_glucose_level"] = pd.to_numeric(df["avg_glucose_level"], errors="coerce")
+
+    # Minimal NA handling (drop rows missing critical fields)
+    needed = ["gender", "ever_married", "work_type", "Residence_type", "smoking_status", "age", "bmi", "avg_glucose_level", "stroke"]
+    df = df.dropna(subset=[c for c in needed if c in df.columns])
+
+    return df
+
+# Train model function
 @st.cache_resource
 def train_model(data):
     # Prepare features
     df_model = data.copy()
-    
+
     # Encode categorical variables
     le_gender = LabelEncoder()
     le_married = LabelEncoder()
     le_work = LabelEncoder()
     le_residence = LabelEncoder()
     le_smoking = LabelEncoder()
-    
+
+    # These columns now exist thanks to the rename in load_real_data()
     df_model['gender_encoded'] = le_gender.fit_transform(df_model['gender'])
     df_model['ever_married_encoded'] = le_married.fit_transform(df_model['ever_married'])
     df_model['work_type_encoded'] = le_work.fit_transform(df_model['work_type'])
     df_model['Residence_type_encoded'] = le_residence.fit_transform(df_model['Residence_type'])
     df_model['smoking_status_encoded'] = le_smoking.fit_transform(df_model['smoking_status'])
-    
+
     # Select features for model
-    features = ['age', 'gender_encoded', 'hypertension', 'heart_disease', 
-                'ever_married_encoded', 'work_type_encoded', 'Residence_type_encoded',
-                'avg_glucose_level', 'bmi', 'smoking_status_encoded']
-    
+    features = [
+        'age',
+        'gender_encoded',
+        'hypertension',
+        'heart_disease',
+        'ever_married_encoded',
+        'work_type_encoded',
+        'Residence_type_encoded',
+        'avg_glucose_level',
+        'bmi',
+        'smoking_status_encoded'
+    ]
+
     X = df_model[features]
     y = df_model['stroke']
-    
+
     # Split and train
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
+
     model = RandomForestClassifier(n_estimators=100, random_state=42, max_depth=10)
     model.fit(X_train, y_train)
-    
+
     return model, le_gender, le_married, le_work, le_residence, le_smoking
 
 # Load data and train model
-data = load_sample_data()
+data = load_real_data()
 model, le_gender, le_married, le_work, le_residence, le_smoking = train_model(data)
 
 # Sidebar navigation
