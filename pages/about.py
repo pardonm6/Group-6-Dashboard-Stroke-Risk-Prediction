@@ -11,7 +11,7 @@ def show_contact_form():
 #--Neuro predict Team---
 col1, col2 = st.columns(2, gap="small", vertical_alignment="center")
 with col1: 
-    st.image("./assets/SU_Logo.png", width=200)
+    st.image("./assets/SU_Logo.png", width=400)
 with col2:
     st. title("Neuro Predict Team", anchor =False)
     st.write(" We are a team of healthcare professionals currently studying a Masters in Health Informatics " \

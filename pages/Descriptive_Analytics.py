@@ -12,6 +12,7 @@ Add here some descriptive analytics with Widgets and Plots
 🔗 Link: <https://plotly.com/python/scientific-charts/>
 """
 
+
 import numpy as np
 import plotly.figure_factory as ff
 
