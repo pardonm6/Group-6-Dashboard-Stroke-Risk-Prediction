@@ -5,7 +5,7 @@ st.sidebar.markdown("# About ℹ️")
 from forms.contact import contact_form
 
 #---define forms for contact---
-@st.experimental_dialog("Contact Us")
+@st.dialog("Contact Us")
 def show_contact_form():
     contact_form()
 
