@@ -6,7 +6,7 @@ st.set_page_config(
 )
 
 # Sidebar configuration
-st.sidebar.image("./assets/project-logo.jpg",)
+st.sidebar.image("./assets/Logo.png",)
 st.sidebar.success("Select a tab above.")
 
 # # Page information
@@ -16,8 +16,8 @@ st.write("# Welcome to Stroke prediction Dashboard ")
 #--- Page setup---
 
 about_page = st.Page(page= "pages/About.py",title= "About", icon= ":material/info:",default=True,)
-project_1_page = st.Page(page= "pages/Descriptive_Analytics", title ="Descriptive Analytics", icon = "material/bar_chart:")
-project_2_page = st.Page(page= "pages/Predictive_Analytics.py", title= "Predictive Analytics", icon = "material/batch_prediction:")
+project_1_page = st.Page(page= "pages/Descriptive_Analytics.py", title ="Descriptive Analytics", icon = "📊")
+project_2_page = st.Page(page= "pages/Predictive_Analytics.py", title= "Predictive Analytics", icon = "📈")
 
 #--Navigation setup [sections]--
 pg = st.navigation(
