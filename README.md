@@ -1,8 +1,8 @@
-# 🧠 NeuroPredict - Stroke Risk Prediction Dashboard
+# NeuroPredict - Stroke Risk Prediction Dashboard
 
 A comprehensive Streamlit dashboard for predicting stroke risk using machine learning algorithms and interactive data visualization.
 
-## 📋 Table of Contents
+## Table of Contents
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -12,7 +12,7 @@ A comprehensive Streamlit dashboard for predicting stroke risk using machine lea
 - [Contributors](#contributors)
 - [License](#license)
 
-## ✨ Features
+## Features
 
 - **Real-time Risk Prediction**: Input patient data and get instant stroke risk assessment
 - **Interactive Visualizations**: Explore data through dynamic charts and graphs
@@ -20,78 +20,44 @@ A comprehensive Streamlit dashboard for predicting stroke risk using machine lea
 - **Comprehensive Analytics**: View descriptive and diagnostic statistics
 - **User-Friendly Interface**: Clean, intuitive design for healthcare professionals
 
-## 🚀 Installation
+## Dashboard Pages
 
-### Prerequisites
-- Python 3.8 or higher
-- pip package manager
-- Git
-
-### Setup Instructions
-
-1. **Clone the repository**
-```bash
-git clone https://github.com/pardonm6/Group-6-Dashboard-Stroke-Risk-Prediction.git
-cd Group-6-Dashboard-Stroke-Risk-Prediction
-```
-
-2. **Create a virtual environment** (recommended)
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. **Install dependencies**
-```bash
-pip install -r requirements.txt
-```
-
-4. **Run the application**
-```bash
-streamlit run Dashboard.py
-```
-
-5. **Access the dashboard**
-Open your browser and navigate to `http://localhost:8501`
-
-## 📊 Dashboard Pages
-
-### 1. 🏠 Home
+### 1. Home
 - Overview of the dashboard
 - Navigation guide
 - Quick statistics
 
-### 2. 📊 Descriptive Analysis
+### 2. Descriptive Analysis
 - Age distribution
 - Gender distribution
 - Risk factor prevalence
 - Correlation analysis
 
-### 3. 🔍 Diagnostic Analysis
+### 3. Diagnostic Analysis
 - Statistical metrics
 - Risk factor analysis
 - Stroke rate analysis
 - Multi-variable relationships
 
-### 4. ⚠️ Risk Prediction
+### 4. Risk Prediction
 - Patient data input form
 - Real-time risk calculation
 - Risk level visualization (Low/Medium/High)
 - Risk gauge display
 
-### 5. 💡 What-If/Preventive
+### 5. Preventive
 - Interactive risk calculator
 - Scenario simulation
 - Prevention guidelines
 - Lifestyle recommendations
 
-### 6. ℹ️ About
+### 6. About
 - Project information
 - Team details
 - Model specifications
 - Future enhancements
 
-## 🛠️ Technologies Used
+## Technologies Used
 
 - **Frontend Framework**: Streamlit
 - **Programming Language**: Python 3.8+
