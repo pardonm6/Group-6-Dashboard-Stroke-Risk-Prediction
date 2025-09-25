@@ -1,8 +1,5 @@
 import streamlit as st
 
-st.markdown("# Descriptive Analytics 📊")
-
-st.sidebar.markdown("# Descriptive Analytics 📊")
 
 """
 Add here some descriptive analytics with Widgets and Plots
