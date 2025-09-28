@@ -136,30 +136,38 @@ if page == "Home":
         ### Welcome to NeuroPredict
         
         This comprehensive dashboard helps healthcare professionals and individuals assess stroke risk 
-        using machine learning algorithms and data visualization.
+        using machine learning algorithms and data visualization.""")
         
-        #### Available Features:
+        st.markdown("### Available Features:")
         
-        1. Descriptive Analytics :
-        - View key statistics and analysis about the stroke dataset
-        - Understand demographic distributions and risk factor prevalence
+        # Create expanders for each feature
+        with st.expander("1. Descriptive Analytics"):
+            st.write("""
+            • Understand demographic distributions and risk factor prevalence.
+            """)
         
-        2. Diagnostic Analytics:
-        - Explore statistical relationships between variables
-        - Identify important risk factors through correlation analysis
+        with st.expander("2. Diagnostic Analytics"):
+            st.write("""
+            • Explore statistical relationships between variables.\n
+            • Identify important risk factors through correlation analysis
+            """)
         
-        3. Risk Prediction :
-        - Input patient data to generate personalized stroke risk assessments
-        - Get immediate risk classification (Low/Medium/High)
+        with st.expander("3. Risk Prediction"):
+            st.write("""
+            • Input patient data to generate personalized stroke risk assessments.\n
+            • Get immediate risk classification (Low/Medium/High)
+            """)
         
-        4. What-If/Preventive :
-        - Explore prevention strategies and lifestyle modifications
-        - Understand how changing risk factors affects stroke probability
+        with st.expander("4. What-If/Preventive"):
+            st.write("""
+            • Explore prevention strategies and lifestyle modifications.\n
+            • Understand how changing risk factors affects stroke probability.
+            """)
         
-        5. About :
-        - Learn more about the project and methodology
-        - View model performance metrics and limitations
-        """)
+        with st.expander("5. About"):
+            st.write("""
+            • Learn more about the project methodology and future directions.
+            """)
     
     with col2:
         
@@ -194,7 +202,7 @@ elif page == "Descriptive Analytics":
                                    nbins=30, barmode='overlay',
                                    title='Age Distribution by Stroke Status',
                                    labels={'age': 'Age (years)', 'count': 'Count', 'stroke': 'Stroke'},
-                                   color_discrete_map={0: "#55b3ed", 1: "#c92210"},
+                                   color_discrete_map={0: "#c2dbeb", 1: "#c92210"},
                                    opacity=0.5)
             fig_age.update_layout(height=400)
             st.plotly_chart(fig_age, use_container_width=True)
