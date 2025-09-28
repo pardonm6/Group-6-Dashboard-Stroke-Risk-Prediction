@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -8,13 +7,15 @@ from plotly.subplots import make_subplots
 import pickle
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 import warnings
 warnings.filterwarnings('ignore')
 import pandas as pd
 
 # Loading dataset (making sure the CSV is in the same folder as Dashboard.py)
-df = pd.read_csv("jupyter-notebooks/cleaned_stroke_data.csv")
+
+
+df = pd.read_csv("jupyter-notebooks/stroke_data_cleaned.csv")
 
 
 # Page configuration
@@ -86,101 +87,34 @@ if 'model' not in st.session_state:
 
 # Use the cleaned CSV (uploaded) instead of synthetic data
 @st.cache_data
-def load_real_data():
-    df = pd.read_csv("jupyter-notebooks/cleaned_stroke_data.csv")
-
-    # Rename to match the rest of the app
-    df = df.rename(columns={
-        "ID": "id",
-        "Sex": "gender",
-        "Age": "age",
-        "Hypertension": "hypertension",
-        "Heart Disease": "heart_disease",
-        "Ever Married?": "ever_married",
-        "Work Type": "work_type",
-        "Residence Type": "Residence_type",
-        "Avg Glucose Level": "avg_glucose_level",
-        "BMI": "bmi",
-        "Smoking?": "smoking_status",
-        "Ever had a Stroke?": "stroke",
-    })
-
-    # Normalize types
-    # Booleans or yes/no → 0/1 for model compatibility
-    for col in ["hypertension", "heart_disease", "ever_married", "stroke"]:
-        if col in df.columns:
-            if df[col].dtype == bool:
-                df[col] = df[col].astype(int)
-            else:
-                df[col] = (
-                    df[col]
-                    .replace({True: 1, False: 0, "Yes": 1, "No": 0, "YES": 1, "NO": 0, "TRUE": 1, "FALSE": 0})
-                    .astype(int)
-                )
-
-    # Numeric coercion + simple impute for BMI (if any zeros/NaN)
-    df["bmi"] = pd.to_numeric(df["bmi"], errors="coerce")
-    df["avg_glucose_level"] = pd.to_numeric(df["avg_glucose_level"], errors="coerce")
-
-    # Minimal NA handling (drop rows missing critical fields)
-    needed = ["gender", "ever_married", "work_type", "Residence_type", "smoking_status", "age", "bmi", "avg_glucose_level", "stroke"]
-    df = df.dropna(subset=[c for c in needed if c in df.columns])
-
+def load_data():
+    df = pd.read_csv("jupyter-notebooks/stroke_data_cleaned.csv")
     return df
 
-# Train model function
+# Loading trained model
 @st.cache_resource
-def train_model(data):
-    # Prepare features
-    df_model = data.copy()
+def load_model():
+    with open('stroke_model.pkl', 'rb') as file:
+        model = pickle.load(file)
+    return model
 
-    # Encode categorical variables
-    le_gender = LabelEncoder()
-    le_married = LabelEncoder()
-    le_work = LabelEncoder()
-    le_residence = LabelEncoder()
-    le_smoking = LabelEncoder()
+# Initialize scaler for new predictions
+@st.cache_resource
+def initialize_scaler(data):
+    from sklearn.preprocessing import MinMaxScaler  
+    scaler = MinMaxScaler()  
+    numerical_cols = ['age', 'avg_glucose_level', 'bmi']
+    scaler.fit(data[numerical_cols])
+    return scaler, numerical_cols
 
-    # These columns now exist thanks to the rename in load_real_data()
-    df_model['gender_encoded'] = le_gender.fit_transform(df_model['gender'])
-    df_model['ever_married_encoded'] = le_married.fit_transform(df_model['ever_married'])
-    df_model['work_type_encoded'] = le_work.fit_transform(df_model['work_type'])
-    df_model['Residence_type_encoded'] = le_residence.fit_transform(df_model['Residence_type'])
-    df_model['smoking_status_encoded'] = le_smoking.fit_transform(df_model['smoking_status'])
-
-    # Select features for model
-    features = [
-        'age',
-        'gender_encoded',
-        'hypertension',
-        'heart_disease',
-        'ever_married_encoded',
-        'work_type_encoded',
-        'Residence_type_encoded',
-        'avg_glucose_level',
-        'bmi',
-        'smoking_status_encoded'
-    ]
-
-    X = df_model[features]
-    y = df_model['stroke']
-
-    # Split and train
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    model = RandomForestClassifier(n_estimators=100, random_state=42, max_depth=10)
-    model.fit(X_train, y_train)
-
-    return model, le_gender, le_married, le_work, le_residence, le_smoking
-
-# Load data and train model
-data = load_real_data()
-model, le_gender, le_married, le_work, le_residence, le_smoking = train_model(data)
+# Load everything
+data = load_data()
+data_original = pd.read_csv("jupyter-notebooks/stroke_data_cleaned_unnormalized.csv")
+model = load_model()
+scaler, numerical_cols = initialize_scaler(data)
 
 # Sidebar navigation
 st.sidebar.markdown('<div class="sidebar-header"> Pages:</div>', unsafe_allow_html=True)
-
-
 page = st.sidebar.radio(
     "Select Page:",
     ["Home", "Descriptive Analytics", "Diagnostic Analytics", "Risk Prediction", 
@@ -246,169 +180,254 @@ if page == "Home":
 # Descriptive Analysis Page
 elif page == "Descriptive Analytics":
     st.markdown("## Descriptive Analytics")
-    st.markdown("This page shows key analysis about the dataset we trained")
+    st.markdown("Explore patterns and distributions in the stroke dataset")
     
-    # Create tabs for different visualizations
-    tab1, tab2, tab3 = st.tabs(["Demographics", "Risk Factors", "Correlations"])
+    # Create tabs for better organization
+    tab1, tab2, tab3 = st.tabs(["Demographics", "Risk Factors", "Distributions",])
     
     with tab1:
         col1, col2 = st.columns(2)
         
         with col1:
-            # Age distribution
-            fig_age = px.histogram(data, x='age', nbins=20, title='Age Distribution',
-                                   color_discrete_sequence=['#1f77b4'])
+            # Age distribution with stroke overlay
+            fig_age = px.histogram(data_original, x='age', color='stroke', 
+                                   nbins=30, barmode='overlay',
+                                   title='Age Distribution by Stroke Status',
+                                   labels={'age': 'Age (years)', 'count': 'Count', 'stroke': 'Stroke'},
+                                   color_discrete_map={0: "#55b3ed", 1: "#c92210"},
+                                   opacity=0.5)
             fig_age.update_layout(height=400)
             st.plotly_chart(fig_age, use_container_width=True)
         
         with col2:
-            # Gender distribution
-            gender_counts = data['gender'].value_counts()
-            fig_gender = px.pie(values=gender_counts.values, names=gender_counts.index,
-                               title='Gender Distribution', color_discrete_map={'Male': '#1f77b4', 'Female': '#ff7f0e'})
-            fig_gender.update_layout(height=400)
-            st.plotly_chart(fig_gender, use_container_width=True)
+            # Age box plot comparing stroke vs no stroke
+            fig_box = px.box(data_original, y='age', x='stroke', 
+                    title='Age Distribution: Stroke vs No Stroke',
+                    labels={'age': 'Age (years)', 'stroke': 'Had Stroke'},
+                    color='stroke',
+                    color_discrete_map={0: '#3498db', 1: '#e74c3c'})
+            fig_box.update_xaxes(ticktext=['No Stroke', 'Stroke'], tickvals=[0, 1])  # Fixed: update_xaxes
+            fig_box.update_layout(height=400, showlegend=False)
+            st.plotly_chart(fig_box, use_container_width=True)
     
     with tab2:
+        # Risk Factor Heatmap
+        st.markdown("### Risk Factor Prevalence by Stroke Status")
+        
+        
+
+        # Calculate percentages for each risk factor
+        risk_data = []
+        for stroke_val in [0, 1]:
+            subset = data_original[data_original['stroke'] == stroke_val]
+            risk_data.append({
+                'Stroke Status': 'Stroke' if stroke_val == 1 else 'No Stroke',
+                'Hypertension': (subset['hypertension'].mean() * 100),
+                'Heart Disease': (subset['heart_disease'].mean() * 100),
+                'High Glucose (>140)': ((subset['avg_glucose_level'] > 140).mean() * 100),
+                'Obesity (BMI>30)': ((subset['bmi'] > 30).mean() * 100),
+                'Ever Married': (subset['ever_married'].mean() * 100)
+            })
+        
+        risk_df = pd.DataFrame(risk_data)
+        
+        # Create heatmap
+        fig_heat = px.imshow(risk_df.set_index('Stroke Status').T,
+                            text_auto='.1f',
+                            title='Risk Factor Prevalence (%) by Stroke Status',
+                            color_continuous_scale='RdYlBu_r',
+                            aspect='auto')
+        fig_heat.update_layout(height=400)
+        st.plotly_chart(fig_heat, use_container_width=True)
+        
+        # Comparative bar chart
         col1, col2 = st.columns(2)
         
         with col1:
-            # Stroke distribution
-            stroke_counts = data['stroke'].value_counts()
-            fig_stroke = px.pie(values=stroke_counts.values, 
-                               names=['No Stroke', 'Stroke'],
-                               title='Stroke Distribution',
-                               color_discrete_sequence=['#2ca02c', '#d62728'])
-            fig_stroke.update_layout(height=400)
-            st.plotly_chart(fig_stroke, use_container_width=True)
+            # Smoking status distribution
+            smoke_stroke = data_original.groupby(['smoking_status', 'stroke']).size().unstack(fill_value=0)
+            smoke_pct = smoke_stroke.div(smoke_stroke.sum(axis=1), axis=0) * 100
+            
+            fig_smoke = px.bar(smoke_pct.reset_index(), 
+                              x='smoking_status', y=1,
+                              title='Stroke Rate by Smoking Status',
+                              labels={'1': 'Stroke Rate (%)', 'smoking_status': 'Smoking Status'},
+                              color_discrete_sequence=['#e74c3c'])
+            fig_smoke.update_xaxes(ticktext=['Unknown', 'Never smoked', 'Formerly smoked', 'Smokes'], 
+                          tickvals=[0, 1, 2, 3])
+            fig_smoke.update_layout(height=350, showlegend=False)
+            st.plotly_chart(fig_smoke, use_container_width=True)
         
         with col2:
-            # Heart Disease and Stroke
-            fig_heart = px.bar(data.groupby(['heart_disease', 'stroke']).size().reset_index(name='count'),
-                              x='heart_disease', y='count', color='stroke',
-                              title='Heart Disease and Stroke',
-                              labels={'heart_disease': 'Heart Disease', 'count': 'Count'})
-            fig_heart.update_layout(height=400)
-            st.plotly_chart(fig_heart, use_container_width=True)
+            # Work type distribution
+            work_stroke = data_original.groupby(['work_type', 'stroke']).size().unstack(fill_value=0)
+            work_pct = work_stroke.div(work_stroke.sum(axis=1), axis=0) * 100
+            
+            fig_work = px.bar(work_pct.reset_index(), 
+                             x='work_type', y=1,
+                             title='Stroke Rate by Work Type',
+                             labels={'1': 'Stroke Rate (%)', 'work_type': 'Work Type'},
+                             color_discrete_sequence=['#e74c3c'])
+            fig_work.update_xaxes(ticktext=['Children', 'Never worked', 'Govt job', 'Private', 'Self'],
+                         tickvals=[0, 1, 2, 3, 4])
+            fig_work.update_layout(height=350, showlegend=False)
+            st.plotly_chart(fig_work, use_container_width=True)
     
     with tab3:
-        # Correlation matrix for numerical features
-        numerical_cols = ['age', 'hypertension', 'heart_disease', 'avg_glucose_level', 'bmi', 'stroke']
-        corr_matrix = data[numerical_cols].corr()
+        col1, col2 = st.columns(2)
         
-        fig_corr = px.imshow(corr_matrix, text_auto=True, aspect="auto",
-                           title='Correlation Matrix of Risk Factors',
-                           color_continuous_scale='RdBu')
-        fig_corr.update_layout(height=600)
-        st.plotly_chart(fig_corr, use_container_width=True)
+        with col1:
+            # Glucose level distribution
+            fig_glucose = px.violin(data_original, y='avg_glucose_level', x='stroke',
+                                   title='Glucose Level Distribution by Stroke Status',
+                                   labels={'avg_glucose_level': 'Average Glucose Level (mg/dL)', 
+                                          'stroke': 'Stroke Status'},
+                                   color='stroke',
+                                   color_discrete_map={0: '#3498db', 1: '#e74c3c'},
+                                   box=True)
+            fig_glucose.update_xaxes(ticktext=['No Stroke', 'Stroke'], tickvals=[0, 1])
+            fig_glucose.update_layout(height=400, showlegend=False)
+            st.plotly_chart(fig_glucose, use_container_width=True)
+        
+        with col2:
+            # BMI distribution
+            fig_bmi = px.violin(data_original, y='bmi', x='stroke',
+                               title='BMI Distribution by Stroke Status',
+                               labels={'bmi': 'Body Mass Index', 'stroke': 'Stroke Status'},
+                               color='stroke',
+                               color_discrete_map={0: '#3498db', 1: '#e74c3c'},
+                               box=True)
+            fig_bmi.update_xaxes(ticktext=['No Stroke', 'Stroke'], tickvals=[0, 1])
+            fig_bmi.update_layout(height=400, showlegend=False)
+            st.plotly_chart(fig_bmi, use_container_width=True)
+        
+   
+    
+   
+    
 
 # Diagnostic Page
 elif page == "Diagnostic Analytics":
     st.markdown("## Diagnostic Analytics")
-    st.markdown("This page includes statistical analysis about the stroke data")
-    
+    st.markdown("This page includes key statistical insights from the stroke data analysis.")
+        
     col1, col2, col3 = st.columns(3)
-    
+        
     with col1:
-        st.metric("Average Age", f"{data['age'].mean():.1f} years", 
-                 f"±{data['age'].std():.1f}")
-    
+            avg_age_stroke = data_original[data_original['stroke']==1]['age'].mean()
+            avg_age_no_stroke = data_original[data_original['stroke']==0]['age'].mean()
+            st.info(f"""
+            **Age Impact**
+            - Stroke patients: {avg_age_stroke:.1f} years
+            - No stroke: {avg_age_no_stroke:.1f} years
+            - Difference: {avg_age_stroke - avg_age_no_stroke:.1f} years
+            """)
+        
     with col2:
-        st.metric("Hypertension Rate", 
-                 f"{(data['hypertension'].mean() * 100):.1f}%",
-                 f"{len(data[data['hypertension']==1])} patients")
-    
+            hyp_stroke_rate = data_original[data_original['hypertension']==1]['stroke'].mean() * 100
+            no_hyp_stroke_rate = data_original[data_original['hypertension']==0]['stroke'].mean() * 100
+            st.warning(f"""
+            **Hypertension Impact**
+            - With hypertension: {hyp_stroke_rate:.1f}% stroke rate
+            - Without: {no_hyp_stroke_rate:.1f}% stroke rate
+            - Risk multiplier: {hyp_stroke_rate/no_hyp_stroke_rate:.1f}x
+            """)
+        
     with col3:
-        st.metric("Stroke Rate", 
-                 f"{(data['stroke'].mean() * 100):.1f}%",
-                 f"{len(data[data['stroke']==1])} cases")
-    
-    st.markdown("### Risk Factor Analysis")
-    
-    # Create subplots for risk factor analysis
-    risk_factors = ['hypertension', 'heart_disease', 'smoking_status', 'work_type']
-    
-    fig = make_subplots(rows=2, cols=2, subplot_titles=risk_factors)
-    
-    # Hypertension vs Stroke
-    hyp_data = data.groupby(['hypertension', 'stroke']).size().reset_index(name='count')
-    fig.add_trace(go.Bar(x=['No Hypertension', 'Hypertension'], 
-                         y=hyp_data[hyp_data['stroke']==1]['count'].values,
-                         name='Stroke Cases'), row=1, col=1)
-    
-    # Heart Disease vs Stroke
-    heart_data = data.groupby(['heart_disease', 'stroke']).size().reset_index(name='count')
-    fig.add_trace(go.Bar(x=['No Heart Disease', 'Heart Disease'], 
-                         y=heart_data[heart_data['stroke']==1]['count'].values,
-                         name='Stroke Cases'), row=1, col=2)
-    
-    # Smoking Status
-    smoke_data = data.groupby(['smoking_status', 'stroke']).size().reset_index(name='count')
-    fig.add_trace(go.Bar(x=smoke_data[smoke_data['stroke']==1]['smoking_status'], 
-                         y=smoke_data[smoke_data['stroke']==1]['count'],
-                         name='Stroke Cases'), row=2, col=1)
-    
-    # Work Type
-    work_data = data.groupby(['work_type', 'stroke']).size().reset_index(name='count')
-    fig.add_trace(go.Bar(x=work_data[work_data['stroke']==1]['work_type'], 
-                         y=work_data[work_data['stroke']==1]['count'],
-                         name='Stroke Cases'), row=2, col=2)
-    
-    fig.update_layout(height=700, showlegend=False)
-    st.plotly_chart(fig, use_container_width=True)
+            heart_stroke_rate = data_original[data_original['heart_disease']==1]['stroke'].mean() * 100
+            no_heart_stroke_rate = data_original[data_original['heart_disease']==0]['stroke'].mean() * 100
+            st.error(f"""
+            **Heart Disease Impact**
+            - With heart disease: {heart_stroke_rate:.1f}% stroke rate
+            - Without: {no_heart_stroke_rate:.1f}% stroke rate
+            - Risk multiplier: {heart_stroke_rate/no_heart_stroke_rate:.1f}x
+            """)
+        
+        # Additional insights
+    st.markdown("### Distribution Summary")
+    summary_df = pd.DataFrame({
+            'Metric': ['Total Patients', 'Stroke Cases', 'Stroke Rate', 'Avg Age', 'Avg BMI', 'Avg Glucose'],
+            'Value': [
+                f"{len(data_original):,}",
+                f"{data_original['stroke'].sum():,}",
+                f"{data_original['stroke'].mean()*100:.2f}%",
+                f"{data_original['age'].mean():.1f} years",
+                f"{data_original['bmi'].mean():.1f}",
+                f"{data_original['avg_glucose_level'].mean():.1f} mg/dL"
+            ]
+        })
+    st.table(summary_df)
 
 # Risk Prediction Page
 elif page == "Risk Prediction":
     st.markdown("## Risk Prediction")
-    st.markdown("Generate stroke risk prediction based on patient data entered")
+    st.markdown("Predicting stroke risk based on data entered")
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.markdown("### Patient Data for Prediction")
+        st.markdown("### Enter Patient Information")
         
-        # Input fields
         col_a, col_b = st.columns(2)
         
         with col_a:
-            age = st.number_input("Age", min_value=1, max_value=120, value=42, step=1)
+            age = st.number_input("Age", min_value=1, max_value=120, value=45)
+            gender = st.selectbox("Gender", ["Female", "Male", "Other"])
             hypertension = st.selectbox("Hypertension", ["No", "Yes"])
             heart_disease = st.selectbox("Heart Disease", ["No", "Yes"])
-            marital_status = st.selectbox("Marital Status", ["Married", "Single"])
-            work_type = st.selectbox("Work Type", ["Private", "Self-employed", "Govt_job", "children", "Never_worked"])
+            ever_married = st.selectbox("Ever Married", ["No", "Yes"])
         
         with col_b:
+            work_type = st.selectbox("Work Type", 
+                                    ["Private", "Self-employed", "Government", "Children", "Never worked"])
             residence_type = st.selectbox("Residence Type", ["Urban", "Rural"])
-            avg_glucose = st.number_input("Average Glucose Level", min_value=50.0, max_value=300.0, value=228.69, step=0.1)
-            bmi = st.number_input("BMI", min_value=10.0, max_value=60.0, value=34.4, step=0.1)
-            smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes", "Unknown"])
-            gender = st.selectbox("Gender", ["Male", "Female"])
+            avg_glucose = st.number_input("Average Glucose Level", 
+                                         min_value=50.0, max_value=300.0, value=100.0)
+            bmi = st.number_input("BMI", min_value=10.0, max_value=60.0, value=25.0)
+            smoking_status = st.selectbox("Smoking Status", 
+                                         ["Never smoked", "Formerly smoked", "Smokes", "Unknown"])
         
-        # Predict button
         if st.button("🔮 Predict Risk", type="primary"):
             # Prepare input data
+
+        
+
+            # Replace the input_data creation in your Risk Prediction section with this:
             input_data = pd.DataFrame({
-                'age': [age],
-                'gender_encoded': [le_gender.transform([gender])[0]],
-                'hypertension': [1 if hypertension == "Yes" else 0],
-                'heart_disease': [1 if heart_disease == "Yes" else 0],
-                'ever_married_encoded': [le_married.transform([marital_status])[0] if marital_status in ["Married", "Single"] else 0],
-                'work_type_encoded': [le_work.transform([work_type])[0]],
-                'Residence_type_encoded': [le_residence.transform([residence_type])[0]],
-                'avg_glucose_level': [avg_glucose],
-                'bmi': [bmi],
-                'smoking_status_encoded': [le_smoking.transform([smoking_status])[0]]
-            })
+                        'gender': [0 if gender == "Female" else 1 if gender == "Male" else 2],
+                        'age': [age],
+                        'hypertension': [1 if hypertension == "Yes" else 0],
+                        'heart_disease': [1 if heart_disease == "Yes" else 0],
+                        'ever_married': [0 if ever_married == "No" else 1],  
+                        'work_type': [  0 if work_type == "Children" else 
+                                        2 if work_type == "Government" else 
+                                        1 if work_type == "Never worked" else 
+                                        3 if work_type == "Private" else 
+                                        4],  
+                        'Residence_type': [0 if residence_type == "Rural" else 1],  
+                        'avg_glucose_level': [avg_glucose],
+                        'bmi': [bmi],
+                        'smoking_status':   [0 if smoking_status == "Unknown" else 
+                                            2 if smoking_status == "Formerly smoked" else 
+                                            1 if smoking_status == "Never smoked" else 
+                                            3] 
+})
+
+
+
+            # Normalize numerical features
+            input_data[numerical_cols] = scaler.transform(input_data[numerical_cols])
             
             # Make prediction
+            prediction = model.predict(input_data)[0]
             prediction_proba = model.predict_proba(input_data)[0]
             risk_percentage = prediction_proba[1] * 100
             
-            # Store in session state for display
             st.session_state.prediction = risk_percentage
+            st.session_state.risk_class = prediction
     
     with col2:
-        st.markdown("### Output")
+        st.markdown("### Risk Assessment")
         
         if 'prediction' in st.session_state:
             risk = st.session_state.prediction
@@ -426,34 +445,34 @@ elif page == "Risk Prediction":
                 risk_class = "high-risk"
                 color = "#c62828"
             
-            st.markdown(f'<div class="risk-box {risk_class}">{risk_level}<br><span style="font-size: 1.2rem;">{risk:.1f}% Risk</span></div>', 
+            st.markdown(f'<div class="risk-box {risk_class}">{risk_level}<br>'
+                       f'<span style="font-size: 1.2rem;">{risk:.1f}% Risk</span></div>', 
                        unsafe_allow_html=True)
             
-            # Risk gauge chart
-            fig_gauge = go.Figure(go.Indicator(
-                mode = "gauge+number",
-                value = risk,
-                domain = {'x': [0, 1], 'y': [0, 1]},
-                title = {'text': "Stroke Risk Score"},
-                gauge = {
-                    'axis': {'range': [None, 100]},
-                    'bar': {'color': color},
-                    'steps': [
-                        {'range': [0, 30], 'color': "#e8f5e9"},
-                        {'range': [30, 70], 'color': "#fff3e0"},
-                        {'range': [70, 100], 'color': "#ffebee"}
-                    ],
-                    'threshold': {
-                        'line': {'color': "red", 'width': 4},
-                        'thickness': 0.75,
-                        'value': 70
-                    }
-                }
-            ))
-            fig_gauge.update_layout(height=300)
-            st.plotly_chart(fig_gauge, use_container_width=True)
-        else:
-            st.info("Enter patient data and click 'Predict Risk' to see results")
+            # Recommendations
+            st.markdown("### Recommendations")
+            if risk >= 70:
+                st.error("""
+                ⚠️ **High Risk Detected**
+                - Immediate medical consultation recommended
+                - Monitor blood pressure and glucose
+                - Consider lifestyle changes
+                """)
+            elif risk >= 30:
+                st.warning("""
+                ⚡ **Moderate Risk**
+                - Schedule regular check-ups
+                - Focus on risk factor management
+                - Maintain healthy lifestyle
+                """)
+            else:
+                st.success("""
+                ✅ **Low Risk**
+                - Continue healthy habits
+                - Annual health screening
+                - Stay active
+                """)
+  
 
 # What-If/Preventive Page
 elif page == "What-If/Preventive":
@@ -503,22 +522,32 @@ elif page == "What-If/Preventive":
             
             sim_risk = min(sim_risk, 95)  # Cap at 95%
         
-        with col2:
-            # Display simulated risk
-            if sim_risk < 30:
-                color = "🟢"
-                message = "Low Risk - Keep maintaining healthy habits!"
-            elif sim_risk < 70:
-                color = "🟡"
-                message = "Medium Risk - Consider lifestyle changes"
-            else:
-                color = "🔴"
-                message = "High Risk - Immediate intervention recommended"
-            
-            st.markdown(f"### {color} Risk Level: {sim_risk}%")
-            st.markdown(f"**{message}**")
-            
-            # Recommendations based on risk factors
+    with col2:
+        # Display simulated risk
+        if sim_risk < 30:
+            st.success(f"""
+            ### Risk Assessment
+            - **Risk Level:** {sim_risk}%
+            - **Status:** Low Risk ✅
+            - **Outlook:** Excellent health profile
+            """)
+        elif sim_risk < 70:
+            st.warning(f"""
+            ### Risk Assessment
+            - **Risk Level:** {sim_risk}%
+            - **Status:** Moderate Risk ⚠️
+            - **Outlook:** Room for improvement
+            """)
+        else:
+            st.error(f"""
+            ### Risk Assessment
+            - **Risk Level:** {sim_risk}%
+            - **Status:** High Risk 🚨
+            - **Outlook:** Immediate action needed
+            """)
+        
+        # Recommendations in a container
+        with st.container():
             st.markdown("### Recommendations:")
             recommendations = []
             if glucose_sim > 140:
@@ -532,8 +561,10 @@ elif page == "What-If/Preventive":
             if not recommendations:
                 recommendations.append("- Continue healthy lifestyle choices")
             
-            for rec in recommendations:
-                st.markdown(rec)
+            # Put recommendations in an expander or container
+            with st.expander("View Personalized Recommendations", expanded=True):
+                for rec in recommendations:
+                    st.markdown(rec)
     
     with tab2:
         st.markdown("### Prevention Guidelines")
