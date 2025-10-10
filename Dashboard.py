@@ -380,7 +380,7 @@ elif page == "Risk Prediction":
         
         with col_a:
             age = st.number_input("Age", min_value=1, max_value=120, value=45)
-            gender = st.selectbox("Gender", ["Female", "Male", "Other"])
+            gender = st.selectbox("Gender", ["Female", "Male"])
             hypertension = st.selectbox("Hypertension", ["No", "Yes"])
             heart_disease = st.selectbox("Heart Disease", ["No", "Yes"])
             ever_married = st.selectbox("Ever Married", ["No", "Yes"])
@@ -402,22 +402,22 @@ elif page == "Risk Prediction":
 
             # Replace the input_data creation in your Risk Prediction section with this:
             input_data = pd.DataFrame({
-                        'gender': [0 if gender == "Female" else 1 if gender == "Male" else 2],
+                        'gender': [0 if gender == "Female" else 1],
                         'age': [age],
                         'hypertension': [1 if hypertension == "Yes" else 0],
                         'heart_disease': [1 if heart_disease == "Yes" else 0],
                         'ever_married': [0 if ever_married == "No" else 1],  
                         'work_type': [  0 if work_type == "Children" else 
+                                        1 if work_type == "Never worked" else
                                         2 if work_type == "Government" else 
-                                        1 if work_type == "Never worked" else 
                                         3 if work_type == "Private" else 
                                         4],  
                         'Residence_type': [0 if residence_type == "Rural" else 1],  
                         'avg_glucose_level': [avg_glucose],
                         'bmi': [bmi],
                         'smoking_status':   [0 if smoking_status == "Unknown" else 
+                                            1 if smoking_status == "Never smoked" else
                                             2 if smoking_status == "Formerly smoked" else 
-                                            1 if smoking_status == "Never smoked" else 
                                             3] 
 })
 
