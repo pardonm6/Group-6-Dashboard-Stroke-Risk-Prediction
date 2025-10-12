@@ -1,21 +1,11 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import pickle
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler
 import warnings
+
 warnings.filterwarnings('ignore')
-import pandas as pd
-
-# Loading dataset (making sure the CSV is in the same folder as Dashboard.py)
-
-
-df = pd.read_csv("jupyter-notebooks/stroke_data_cleaned.csv")
 
 
 # Page configuration
@@ -91,12 +81,23 @@ def load_data():
     df = pd.read_csv("jupyter-notebooks/stroke_data_cleaned.csv")
     return df
 
-# Loading trained model
+# Loading trained model - UPDATED to use the new model with optimal threshold
 @st.cache_resource
 def load_model():
-    with open('stroke_model.pkl', 'rb') as file:
-        model = pickle.load(file)
-    return model
+    try:
+        # Try to load the new model with optimal threshold first
+        with open('stroke_model_best.pkl', 'rb') as file:
+            model_data = pickle.load(file)
+        return model_data
+    except FileNotFoundError:
+        # Fallback to old model if new one doesn't exist
+        try:
+            with open('stroke_model.pkl', 'rb') as file:
+                model = pickle.load(file)
+            # Wrap in dictionary format for compatibility
+            return {'model': model, 'scaler': None, 'threshold': 0.5}
+        except FileNotFoundError:
+            return None
 
 # Initialize scaler for new predictions
 @st.cache_resource
@@ -110,11 +111,11 @@ def initialize_scaler(data):
 # Load everything
 data = load_data()
 data_original = pd.read_csv("jupyter-notebooks/stroke_data_cleaned_unnormalized.csv")
-model = load_model()
+model_data = load_model()
 scaler, numerical_cols = initialize_scaler(data)
 
 # Sidebar navigation
-st.sidebar.markdown('<div class="sidebar-header"> Pages:</div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="sidebar-header">📊 Pages:</div>', unsafe_allow_html=True)
 page = st.sidebar.radio(
     "Select Page:",
     ["Home", "Descriptive Analytics", "Diagnostic Analytics", "Risk Prediction", 
@@ -123,7 +124,7 @@ page = st.sidebar.radio(
 )
 
 # Header
-st.markdown('<h1 class="main-header"> Stroke Risk Prediction Dashboard 🧠 </h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">🧠 Stroke Risk Prediction Dashboard 🧠 </h1>', unsafe_allow_html=True)
 
 # Home Page
 if page == "Home":
@@ -214,7 +215,7 @@ elif page == "Descriptive Analytics":
                     labels={'age': 'Age (years)', 'stroke': 'Had Stroke'},
                     color='stroke',
                     color_discrete_map={0: '#3498db', 1: '#e74c3c'})
-            fig_box.update_xaxes(ticktext=['No Stroke', 'Stroke'], tickvals=[0, 1])  # Fixed: update_xaxes
+            fig_box.update_xaxes(ticktext=['No Stroke', 'Stroke'], tickvals=[0, 1])
             fig_box.update_layout(height=400, showlegend=False)
             st.plotly_chart(fig_box, use_container_width=True)
     
@@ -308,11 +309,6 @@ elif page == "Descriptive Analytics":
             fig_bmi.update_xaxes(ticktext=['No Stroke', 'Stroke'], tickvals=[0, 1])
             fig_bmi.update_layout(height=400, showlegend=False)
             st.plotly_chart(fig_bmi, use_container_width=True)
-        
-   
-    
-   
-    
 
 # Diagnostic Page
 elif page == "Diagnostic Analytics":
@@ -320,38 +316,38 @@ elif page == "Diagnostic Analytics":
     st.markdown("This page includes key statistical insights from the stroke data analysis.")
         
     col1, col2, col3 = st.columns(3)
-        
+
     with col1:
-            avg_age_stroke = data_original[data_original['stroke']==1]['age'].mean()
-            avg_age_no_stroke = data_original[data_original['stroke']==0]['age'].mean()
-            st.info(f"""
-            **Age Impact**
-            - Stroke patients: {avg_age_stroke:.1f} years
-            - No stroke: {avg_age_no_stroke:.1f} years
-            - Difference: {avg_age_stroke - avg_age_no_stroke:.1f} years
-            """)
-        
+        avg_age_stroke = data_original[data_original['stroke'] == 1]['age'].mean()
+        avg_age_no_stroke = data_original[data_original['stroke'] == 0]['age'].mean()
+        st.info(f"""
+        **Age Impact**
+        - Stroke patients: {avg_age_stroke:.1f} years
+        - No stroke: {avg_age_no_stroke:.1f} years
+        - Difference: {avg_age_stroke - avg_age_no_stroke:.1f} years
+        """)
+
     with col2:
-            hyp_stroke_rate = data_original[data_original['hypertension']==1]['stroke'].mean() * 100
-            no_hyp_stroke_rate = data_original[data_original['hypertension']==0]['stroke'].mean() * 100
-            st.warning(f"""
-            **Hypertension Impact**
-            - With hypertension: {hyp_stroke_rate:.1f}% stroke rate
-            - Without: {no_hyp_stroke_rate:.1f}% stroke rate
-            - Risk multiplier: {hyp_stroke_rate/no_hyp_stroke_rate:.1f}x
-            """)
-        
+        hyp_stroke_rate = data_original[data_original['hypertension'] == 1]['stroke'].mean() * 100
+        no_hyp_stroke_rate = data_original[data_original['hypertension'] == 0]['stroke'].mean() * 100
+        st.warning(f"""
+        **Hypertension Impact**
+        - With hypertension: {hyp_stroke_rate:.1f}% stroke rate
+        - Without: {no_hyp_stroke_rate:.1f}% stroke rate
+        - Risk multiplier: {hyp_stroke_rate/no_hyp_stroke_rate:.1f}x
+        """)
+
     with col3:
-            heart_stroke_rate = data_original[data_original['heart_disease']==1]['stroke'].mean() * 100
-            no_heart_stroke_rate = data_original[data_original['heart_disease']==0]['stroke'].mean() * 100
-            st.error(f"""
-            **Heart Disease Impact**
-            - With heart disease: {heart_stroke_rate:.1f}% stroke rate
-            - Without: {no_heart_stroke_rate:.1f}% stroke rate
-            - Risk multiplier: {heart_stroke_rate/no_heart_stroke_rate:.1f}x
-            """)
-        
-        # Additional insights
+        heart_stroke_rate = data_original[data_original['heart_disease'] == 1]['stroke'].mean() * 100
+        no_heart_stroke_rate = data_original[data_original['heart_disease'] == 0]['stroke'].mean() * 100
+        st.error(f"""
+        **Heart Disease Impact**
+        - With heart disease: {heart_stroke_rate:.1f}% stroke rate
+        - Without: {no_heart_stroke_rate:.1f}% stroke rate
+        - Risk multiplier: {heart_stroke_rate/no_heart_stroke_rate:.1f}x
+        """)
+
+    # Additional insights
     st.markdown("### Distribution Summary")
     summary_df = pd.DataFrame({
             'Metric': ['Total Patients', 'Stroke Cases', 'Stroke Rate', 'Avg Age', 'Avg BMI', 'Avg Glucose'],
@@ -366,121 +362,300 @@ elif page == "Diagnostic Analytics":
         })
     st.table(summary_df)
 
-# Risk Prediction Page
+# Risk Prediction Page - UPDATED WITH IMPROVED MODEL
 elif page == "Risk Prediction":
     st.markdown("## Risk Prediction")
-    st.markdown("Predicting stroke risk based on data entered")
-    
-    col1, col2 = st.columns([2, 1])
-    
+    st.markdown("Input patient information to generate a personalized stroke risk assessment.")
+
+    st.markdown("""
+        <style>
+        .stButton>button {
+            background-color: #ff4b4b;
+            color: white;
+            font-size: 18px;
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            width: 100%;
+        }
+        .stButton>button:hover {
+            background-color: #ff3333;
+            border: none;
+        }
+        .risk-box {
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .high-risk {
+            background-color: #ffebee;
+            border: 3px solid #f44336;
+        }
+        .low-risk {
+            background-color: #e8f5e9;
+            border: 3px solid #4caf50;
+        }
+        .risk-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .risk-percentage {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .recommendation-box {
+            background-color: #5c3a3a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        h1, h2, h3 {
+            color: white !important;
+        }
+        .stSelectbox label, .stNumberInput label {
+            color: white !important;
+            font-weight: 500 !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    col1, col2 = st.columns([1, 1])
+
     with col1:
-        st.markdown("### Enter Patient Information")
-        
-        col_a, col_b = st.columns(2)
-        
-        with col_a:
-            age = st.number_input("Age", min_value=1, max_value=120, value=45)
-            gender = st.selectbox("Gender", ["Female", "Male"])
+        st.markdown("<h2>Enter Patient Information</h2>", unsafe_allow_html=True)
+        input_col1, input_col2 = st.columns(2)
+
+        with input_col1:
+            age = st.number_input("Age", min_value=0, max_value=120, value=45, step=1)
+            gender = st.selectbox("Gender", ["Male", "Female", "Other"])
             hypertension = st.selectbox("Hypertension", ["No", "Yes"])
             heart_disease = st.selectbox("Heart Disease", ["No", "Yes"])
             ever_married = st.selectbox("Ever Married", ["No", "Yes"])
-        
-        with col_b:
-            work_type = st.selectbox("Work Type", 
-                                    ["Private", "Self-employed", "Government", "Children", "Never worked"])
+
+        with input_col2:
+            work_type = st.selectbox(
+                "Work Type",
+                ["Private", "Self-employed", "Govt_job", "children", "Never_worked"]
+            )
             residence_type = st.selectbox("Residence Type", ["Urban", "Rural"])
-            avg_glucose = st.number_input("Average Glucose Level", 
-                                         min_value=50.0, max_value=300.0, value=100.0)
-            bmi = st.number_input("BMI", min_value=10.0, max_value=60.0, value=25.0)
-            smoking_status = st.selectbox("Smoking Status", 
-                                         ["Never smoked", "Formerly smoked", "Smokes", "Unknown"])
-        
-        if st.button("🔮 Predict Risk", type="primary"):
-            # Prepare input data
+            avg_glucose = st.number_input(
+                "Average Glucose Level",
+                min_value=50.0,
+                max_value=300.0,
+                value=100.0,
+                step=0.1
+            )
+            bmi = st.number_input(
+                "BMI",
+                min_value=10.0,
+                max_value=60.0,
+                value=25.0,
+                step=0.1
+            )
+            smoking_status = st.selectbox(
+                "Smoking Status",
+                ["never smoked", "formerly smoked", "smokes", "Unknown"]
+            )
 
-        
+        st.markdown("<br>", unsafe_allow_html=True)
+        predict_button = st.button("🧠 Predict Risk")
 
-            # Replace the input_data creation in your Risk Prediction section with this:
-            input_data = pd.DataFrame({
-                        'gender': [0 if gender == "Female" else 1],
-                        'age': [age],
-                        'hypertension': [1 if hypertension == "Yes" else 0],
-                        'heart_disease': [1 if heart_disease == "Yes" else 0],
-                        'ever_married': [0 if ever_married == "No" else 1],  
-                        'work_type': [  0 if work_type == "Children" else 
-                                        1 if work_type == "Never worked" else
-                                        2 if work_type == "Government" else 
-                                        3 if work_type == "Private" else 
-                                        4],  
-                        'Residence_type': [0 if residence_type == "Rural" else 1],  
-                        'avg_glucose_level': [avg_glucose],
-                        'bmi': [bmi],
-                        'smoking_status':   [0 if smoking_status == "Unknown" else 
-                                            1 if smoking_status == "Never smoked" else
-                                            2 if smoking_status == "Formerly smoked" else 
-                                            3] 
-})
-
-
-
-            # Normalize numerical features
-            input_data[numerical_cols] = scaler.transform(input_data[numerical_cols])
-            
-            # Make prediction
-            prediction = model.predict(input_data)[0]
-            prediction_proba = model.predict_proba(input_data)[0]
-            risk_percentage = prediction_proba[1] * 100
-            
-            st.session_state.prediction = risk_percentage
-            st.session_state.risk_class = prediction
-    
     with col2:
-        st.markdown("### Risk Assessment")
-        
-        if 'prediction' in st.session_state:
-            risk = st.session_state.prediction
-            
-            if risk < 30:
-                risk_level = "Low Risk"
-                risk_class = "low-risk"
-                color = "#2e7d32"
-            elif risk < 70:
-                risk_level = "Medium Risk"
-                risk_class = "medium-risk"
-                color = "#ef6c00"
+        st.markdown("<h2>Risk Assessment</h2>", unsafe_allow_html=True)
+
+        if predict_button:
+            if model_data is None or scaler is None:
+                st.error("Model or scaler not loaded. Please ensure train_models.py has been run.")
             else:
-                risk_level = "High Risk"
-                risk_class = "high-risk"
-                color = "#c62828"
+                # Encode categorical inputs - MUST MATCH TRAINING ENCODING!
+                # LabelEncoder encodes alphabetically during training
+                
+                # Gender: Female=0, Male=1, Other=2 (alphabetical)
+                gender_map = {"Female": 0, "Male": 1, "Other": 2}
+                gender_value = gender_map[gender]
+                
+                # Binary features
+                hypertension_value = 1 if hypertension == "Yes" else 0
+                heart_disease_value = 1 if heart_disease == "Yes" else 0
+                ever_married_value = 1 if ever_married == "Yes" else 0
+
+                # Work Type: alphabetical order (children, Govt_job, Never_worked, Private, Self-employed)
+                work_type_map = {
+                    "children": 0,
+                    "Govt_job": 1,
+                    "Never_worked": 2,
+                    "Private": 3,
+                    "Self-employed": 4
+                }
+                work_type_value = work_type_map[work_type]
+                
+                # Residence: Rural=0, Urban=1 (alphabetical)
+                residence_value = 1 if residence_type == "Urban" else 0
+                
+                # Smoking Status: alphabetical (Unknown, formerly smoked, never smoked, smokes)
+                smoking_map = {
+                    "Unknown": 0,
+                    "formerly smoked": 1,
+                    "never smoked": 2,
+                    "smokes": 3
+                }
+                smoking_value = smoking_map[smoking_status]
+
+                # Prepare input data
+                input_data = pd.DataFrame({
+                    'gender': [gender_value],
+                    'age': [float(age)],
+                    'hypertension': [hypertension_value],
+                    'heart_disease': [heart_disease_value],
+                    'ever_married': [ever_married_value],
+                    'work_type': [work_type_value],
+                    'Residence_type': [residence_value],
+                    'avg_glucose_level': [avg_glucose],
+                    'bmi': [bmi],
+                    'smoking_status': [smoking_value]
+                })
+                # Get model and scaler from loaded model_data
+                model = model_data.get('model', model_data)
+                model_scaler = model_data.get('scaler')  # Try to get scaler from model
+
+                # If model doesn't have scaler, create one from training data
+                if model_scaler is None:
+                    st.warning("⚠️ Model was trained with an older version. Using fallback scaler (predictions may be less accurate). Please retrain the model.")
+                    from sklearn.preprocessing import StandardScaler
+                    from sklearn.preprocessing import LabelEncoder
+
+                    temp_scaler = StandardScaler()
+                    df_temp = pd.read_csv('jupyter-notebooks/stroke_data_cleaned_unnormalized.csv')
+
+                    # Encode just like in training
+                    le_gender = LabelEncoder()
+                    le_married = LabelEncoder()
+                    le_work = LabelEncoder()
+                    le_residence = LabelEncoder()
+                    le_smoking = LabelEncoder()
+
+                    df_temp['gender'] = le_gender.fit_transform(df_temp['gender'])
+                    df_temp['ever_married'] = le_married.fit_transform(df_temp['ever_married'])
+                    df_temp['work_type'] = le_work.fit_transform(df_temp['work_type'])
+                    df_temp['Residence_type'] = le_residence.fit_transform(df_temp['Residence_type'])
+                    df_temp['smoking_status'] = le_smoking.fit_transform(df_temp['smoking_status'])
+
+                    X_temp = df_temp.drop('stroke', axis=1)
+                    temp_scaler.fit(X_temp)
+                    model_scaler = temp_scaler
+
+                if model_scaler is None:
+                    model_scaler = scaler
+
+                optimal_threshold = model_data.get('threshold', 0.5)
+                
+                # Scale the input using the model's scaler
+                input_scaled = model_scaler.transform(input_data)
+                
+                # Make prediction with probability
+                probability = model.predict_proba(input_scaled)[0]
+                risk_percentage = probability[1] * 100
+                
+                # Use optimal threshold for prediction
+                prediction = 1 if probability[1] >= optimal_threshold else 0
+
+                # Display results based on prediction and probability
+                if prediction == 1 or risk_percentage > 50:
+                    st.markdown(f"""
+                        <div class="risk-box high-risk">
+                            <div class="risk-title" style="color: #d32f2f;">⚠️ HIGH RISK</div>
+                            <div class="risk-percentage" style="color: #d32f2f;">{risk_percentage:.1f}% Probability</div>
+                            <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                                Model threshold: {optimal_threshold:.2f} | Confidence: {max(probability)*100:.1f}%
+                            </p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown("<h2>Recommendations</h2>", unsafe_allow_html=True)
+                    st.markdown("""
+                        <div class="recommendation-box">
+                            <h3 style="color: #ffeb3b;">⚠️ High Risk Detected</h3>
+                            <ul style="color: white; font-size: 16px; line-height: 2;">
+                                <li><b>Immediate medical consultation recommended</b></li>
+                                <li><b>Schedule comprehensive neurological screening</b></li>
+                                <li><b>Monitor blood pressure and glucose daily</b></li>
+                                <li><b>Review medications with your doctor</b></li>
+                                <li><b>Consider lifestyle modifications immediately</b></li>
+                            </ul>
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                        <div class="risk-box low-risk">
+                            <div class="risk-title" style="color: #388e3c;">✅ LOW RISK</div>
+                            <div class="risk-percentage" style="color: #388e3c;">{risk_percentage:.1f}% Probability</div>
+                            <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                                Model threshold: {optimal_threshold:.2f} | Confidence: {max(probability)*100:.1f}%
+                            </p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown("<h2>Recommendations</h2>", unsafe_allow_html=True)
+                    st.markdown("""
+                        <div class="recommendation-box">
+                            <h3 style="color: #4caf50;">✓ Low Risk Detected</h3>
+                            <ul style="color: white; font-size: 16px; line-height: 2;">
+                                <li><b>Maintain current healthy lifestyle habits</b></li>
+                                <li><b>Regular health check-ups recommended</b></li>
+                                <li><b>Continue monitoring key health metrics</b></li>
+                                <li><b>Stay physically active (150+ min/week)</b></li>
+                                <li><b>Follow a balanced, heart-healthy diet</b></li>
+                            </ul>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                with st.expander("📊 View Detailed Risk Factors"):
+                    st.write("**Key Risk Factors Contributing to Assessment:**")
+                    risk_factors = []
+                    if age > 60:
+                        risk_factors.append(f"• Age ({age}) - Elevated risk in older adults")
+                    if hypertension_value == 1:
+                        risk_factors.append("• Hypertension - Significant risk factor")
+                    if heart_disease_value == 1:
+                        risk_factors.append("• Heart Disease - Major risk factor")
+                    if avg_glucose > 125:
+                        risk_factors.append(f"• High glucose level ({avg_glucose:.1f}) - Diabetes indicator")
+                    if bmi > 30:
+                        risk_factors.append(f"• High BMI ({bmi:.1f}) - Obesity-related risk")
+                    if smoking_value == 3:
+                        risk_factors.append("• Current smoker - Significant risk factor")
+
+                    if risk_factors:
+                        for factor in risk_factors:
+                            st.write(factor)
+                    else:
+                        st.write("• No major risk factors identified")
+
+                    st.write(f"\n**Overall Risk Score:** {risk_percentage:.1f}%")
+                    st.write(f"**Model Confidence:** {max(probability) * 100:.1f}%")
+                    st.write(f"**Optimal Threshold Used:** {optimal_threshold:.2f}")
+                    
+                    # Show model performance metrics if available
+                    if 'roc_auc' in model_data:
+                        st.markdown("---")
+                        st.write("**Model Performance Metrics:**")
+                        st.write(f"• ROC-AUC Score: {model_data.get('roc_auc', 0):.3f}")
+                        st.write(f"• F1-Score: {model_data.get('f1_score', 0):.3f}")
+                        st.write(f"• Sensitivity: {model_data.get('sensitivity', 0):.3f}")
+                        st.write(f"• Specificity: {model_data.get('specificity', 0):.3f}")
+        else:
+            st.info("👈 Enter patient information and click 'Predict Risk' to see the assessment")
             
-            st.markdown(f'<div class="risk-box {risk_class}">{risk_level}<br>'
-                       f'<span style="font-size: 1.2rem;">{risk:.1f}% Risk</span></div>', 
-                       unsafe_allow_html=True)
-            
-            # Recommendations
-            st.markdown("### Recommendations")
-            if risk >= 70:
-                st.error("""
-                ⚠️ **High Risk Detected**
-                - Immediate medical consultation recommended
-                - Monitor blood pressure and glucose
-                - Consider lifestyle changes
+            # Show model info when available
+            if model_data and 'threshold' in model_data:
+                st.success(f"""
+                **Using Optimized Model**
+                - Optimal Threshold: {model_data.get('threshold', 0.5):.2f}
+                - Model ROC-AUC: {model_data.get('roc_auc', 0):.3f}
+                - This model has been tuned to better detect stroke cases
                 """)
-            elif risk >= 30:
-                st.warning("""
-                ⚡ **Moderate Risk**
-                - Schedule regular check-ups
-                - Focus on risk factor management
-                - Maintain healthy lifestyle
-                """)
-            else:
-                st.success("""
-                ✅ **Low Risk**
-                - Continue healthy habits
-                - Annual health screening
-                - Stay active
-                """)
-  
 
 # What-If/Preventive Page
 elif page == "What-If/Preventive":
@@ -530,49 +705,49 @@ elif page == "What-If/Preventive":
             
             sim_risk = min(sim_risk, 95)  # Cap at 95%
         
-    with col2:
-        # Display simulated risk
-        if sim_risk < 30:
-            st.success(f"""
-            ### Risk Assessment
-            - **Risk Level:** {sim_risk}%
-            - **Status:** Low Risk ✅
-            - **Outlook:** Excellent health profile
-            """)
-        elif sim_risk < 70:
-            st.warning(f"""
-            ### Risk Assessment
-            - **Risk Level:** {sim_risk}%
-            - **Status:** Moderate Risk ⚠️
-            - **Outlook:** Room for improvement
-            """)
-        else:
-            st.error(f"""
-            ### Risk Assessment
-            - **Risk Level:** {sim_risk}%
-            - **Status:** High Risk 🚨
-            - **Outlook:** Immediate action needed
-            """)
-        
-        # Recommendations in a container
-        with st.container():
-            st.markdown("### Recommendations:")
-            recommendations = []
-            if glucose_sim > 140:
-                recommendations.append("- Monitor and control blood sugar levels")
-            if bmi_sim > 30:
-                recommendations.append("- Achieve healthy weight through diet and exercise")
-            if smoke_sim == "smokes":
-                recommendations.append("- Quit smoking immediately")
-            if hyp_sim:
-                recommendations.append("- Take prescribed hypertension medications")
-            if not recommendations:
-                recommendations.append("- Continue healthy lifestyle choices")
+        with col2:
+            # Display simulated risk
+            if sim_risk < 30:
+                st.success(f"""
+                ### Risk Assessment
+                - **Risk Level:** {sim_risk}%
+                - **Status:** Low Risk ✅
+                - **Outlook:** Excellent health profile
+                """)
+            elif sim_risk < 70:
+                st.warning(f"""
+                ### Risk Assessment
+                - **Risk Level:** {sim_risk}%
+                - **Status:** Moderate Risk ⚠️
+                - **Outlook:** Room for improvement
+                """)
+            else:
+                st.error(f"""
+                ### Risk Assessment
+                - **Risk Level:** {sim_risk}%
+                - **Status:** High Risk 🚨
+                - **Outlook:** Immediate action needed
+                """)
             
-            # Put recommendations in an expander or container
-            with st.expander("View Personalized Recommendations", expanded=True):
-                for rec in recommendations:
-                    st.markdown(rec)
+            # Recommendations in a container
+            with st.container():
+                st.markdown("### Recommendations:")
+                recommendations = []
+                if glucose_sim > 140:
+                    recommendations.append("- Monitor and control blood sugar levels")
+                if bmi_sim > 30:
+                    recommendations.append("- Achieve healthy weight through diet and exercise")
+                if smoke_sim == "smokes":
+                    recommendations.append("- Quit smoking immediately")
+                if hyp_sim:
+                    recommendations.append("- Take prescribed hypertension medications")
+                if not recommendations:
+                    recommendations.append("- Continue healthy lifestyle choices")
+                
+                # Put recommendations in an expander or container
+                with st.expander("View Personalized Recommendations", expanded=True):
+                    for rec in recommendations:
+                        st.markdown(rec)
     
     with tab2:
         st.markdown("### Prevention Guidelines")
@@ -617,8 +792,15 @@ elif page == "What-If/Preventive":
         professionals for personalized medical advice and treatment plans.
         """)
 
-
 # Footer
+st.markdown("<br><br>", unsafe_allow_html=True)
+st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("""
+    <p style='text-align: center; color: #666;'>
+    ⚕️ This dashboard is for educational purposes only. 
+    Always consult healthcare professionals for medical advice.
+    </p>
+""", unsafe_allow_html=True)
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #888;'>
