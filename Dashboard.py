@@ -115,7 +115,7 @@ model_data = load_model()
 scaler, numerical_cols = initialize_scaler(data)
 
 # Sidebar navigation
-st.sidebar.markdown('<div class="sidebar-header">📊 Pages:</div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="sidebar-header"> Pages:</div>', unsafe_allow_html=True)
 page = st.sidebar.radio(
     "Select Page:",
     ["Home", "Descriptive Analytics", "Diagnostic Analytics", "Risk Prediction", 
@@ -124,7 +124,7 @@ page = st.sidebar.radio(
 )
 
 # Header
-st.markdown('<h1 class="main-header">🧠 Stroke Risk Prediction Dashboard 🧠 </h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header"> Stroke Risk Prediction Dashboard 🧠 </h1>', unsafe_allow_html=True)
 
 # Home Page
 if page == "Home":
@@ -354,7 +354,7 @@ elif page == "Diagnostic Analytics":
         })
     st.table(summary_df)
 
-# Risk Prediction Page - UPDATED WITH IMPROVED MODEL
+# Risk Prediction Page
 elif page == "Risk Prediction":
     st.markdown("## Risk Prediction")
     st.markdown("Input patient information to generate a personalized stroke risk assessment.")
@@ -603,7 +603,7 @@ elif page == "Risk Prediction":
                     """, unsafe_allow_html=True)
 
                 st.markdown("<br>", unsafe_allow_html=True)
-                with st.expander("📊 View Detailed Risk Factors"):
+                with st.expander("View Detailed Risk Factors"):
                     st.write("**Key Risk Factors Contributing to Assessment:**")
                     risk_factors = []
                     if age > 60:
@@ -629,25 +629,11 @@ elif page == "Risk Prediction":
                     st.write(f"**Model Confidence:** {max(probability) * 100:.1f}%")
                     st.write(f"**Optimal Threshold Used:** {optimal_threshold:.2f}")
                     
-                    # Show model performance metrics if available
-                    if 'roc_auc' in model_data:
-                        st.markdown("---")
-                        st.write("**Model Performance Metrics:**")
-                        st.write(f"• ROC-AUC Score: {model_data.get('roc_auc', 0):.3f}")
-                        st.write(f"• F1-Score: {model_data.get('f1_score', 0):.3f}")
-                        st.write(f"• Sensitivity: {model_data.get('sensitivity', 0):.3f}")
-                        st.write(f"• Specificity: {model_data.get('specificity', 0):.3f}")
+
         else:
             st.info("👈 Enter patient information and click 'Predict Risk' to see the assessment")
             
-            # Show model info when available
-            if model_data and 'threshold' in model_data:
-                st.success(f"""
-                **Using Optimized Model**
-                - Optimal Threshold: {model_data.get('threshold', 0.5):.2f}
-                - Model ROC-AUC: {model_data.get('roc_auc', 0):.3f}
-                - This model has been tuned to better detect stroke cases
-                """)
+            
 
 # What-If/Preventive Page
 elif page == "What-If/Preventive":
